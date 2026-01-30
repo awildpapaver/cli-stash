@@ -126,10 +126,11 @@ Usage:
   cli-stash help         Show this help message
 
 Navigation (in interactive mode):
-  ↑/↓ or Ctrl+P/N    Navigate through commands
-  Enter              Select command
-  Ctrl+D             Delete selected command
-  Esc                Cancel
+  ↑/↓               Navigate through commands
+  Enter             Select command
+  Ctrl+A            Add new command
+  Ctrl+D            Delete selected command
+  Esc               Cancel
 
 Tips:
   - Use 'cli-stash push' after running a command you want to save

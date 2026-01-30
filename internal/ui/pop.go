@@ -34,6 +34,7 @@ type PopModel struct {
 	cursor       int
 	selected     string
 	quitting     bool
+	adding       bool
 	storage      *storage.Storage
 	executed     bool
 	executeError error
@@ -71,6 +72,37 @@ func (m PopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Handle adding mode
+		if m.adding {
+			switch msg.String() {
+			case "ctrl+c", "esc":
+				// Cancel adding, return to list
+				m.adding = false
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Type to filter commands..."
+				return m, nil
+
+			case "enter":
+				// Save the new command
+				text := m.textInput.Value()
+				if text != "" {
+					m.storage.Add(text)
+					m.commands, _ = m.storage.List()
+					m.filtered = m.commands
+				}
+				m.adding = false
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Type to filter commands..."
+				m.cursor = 0
+				return m, nil
+			}
+
+			// Update text input in adding mode
+			m.textInput, cmd = m.textInput.Update(msg)
+			return m, cmd
+		}
+
+		// Normal mode
 		switch msg.String() {
 		case "ctrl+c", "esc":
 			m.quitting = true
@@ -93,6 +125,13 @@ func (m PopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected = m.filtered[m.cursor]
 			}
 			return m, tea.Quit
+
+		case "ctrl+a":
+			// Switch to adding mode
+			m.adding = true
+			m.textInput.SetValue("")
+			m.textInput.Placeholder = "Enter new command to save..."
+			return m, nil
 
 		case "ctrl+d", "delete":
 			// Delete the selected command
@@ -170,14 +209,22 @@ func (m PopModel) View() string {
 	}
 
 	if m.selected != "" {
-		return fmt.Sprintf("%s\n", m.selected)
+		return "" // main.go handles inserting into terminal
+	}
+
+	// Adding mode
+	if m.adding {
+		s := titleStyle.Render("Add Command") + "\n\n"
+		s += m.textInput.View() + "\n\n"
+		s += dimStyle.Render("Enter to save • Esc to cancel")
+		return s + "\n"
 	}
 
 	s := titleStyle.Render("Stash") + "\n\n"
 	s += m.textInput.View() + "\n\n"
 
 	if len(m.commands) == 0 {
-		s += dimStyle.Render("No saved commands. Use 'cli-stash push' to add some.") + "\n"
+		s += dimStyle.Render("No saved commands. Press Ctrl+A to add one.") + "\n"
 	} else if len(m.filtered) == 0 {
 		s += dimStyle.Render("No matching commands.") + "\n"
 	} else {
@@ -208,7 +255,7 @@ func (m PopModel) View() string {
 		s += "\n" + dimStyle.Render(fmt.Sprintf("Showing %d of %d commands", len(m.filtered), len(m.commands)))
 	}
 
-	s += "\n\n" + dimStyle.Render("↑/↓ navigate • Enter select • Ctrl+D delete • Esc cancel")
+	s += "\n\n" + dimStyle.Render("↑/↓ navigate • Enter select • Ctrl+A add • Ctrl+D delete • Esc cancel")
 
 	return s + "\n"
 }

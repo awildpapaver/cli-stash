@@ -3,13 +3,23 @@
 package terminal
 
 import (
+	"os"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/term"
 )
 
 // InsertInput inserts a string into the terminal input buffer
 // using TIOCSTI ioctl. This makes the text appear as if typed by the user.
 func InsertInput(cmd string) error {
+	// Put terminal in raw mode to disable echo during insert
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return err
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
 	for _, c := range cmd {
 		char := byte(c)
 		_, _, errno := syscall.Syscall(

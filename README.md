@@ -69,9 +69,9 @@ If terminal insert is not supported (e.g., on newer Linux kernels), the command 
 
 | Key | Action |
 |-----|--------|
-| ↑ / Ctrl+P | Move up |
-| ↓ / Ctrl+N | Move down |
+| ↑ / ↓ | Navigate |
 | Enter | Select/Save |
+| Ctrl+A | Add new command |
 | Ctrl+D | Delete command |
 | Esc | Cancel |
 
