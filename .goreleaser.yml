@@ -1,4 +1,4 @@
-# GoReleaser configuration for Stash
+# GoReleaser configuration for cli-stash
 version: 2
 
 before:
@@ -67,10 +67,10 @@ release:
   draft: false
   prerelease: auto
   
-  name_template: "Stash v{{.Version}}"
+  name_template: "cli-stash v{{.Version}}"
   
   header: |
-    ## Stash v{{.Version}}
+    ## cli-stash v{{.Version}}
     
     A terminal UI application for saving and recalling shell commands.
     
@@ -81,8 +81,8 @@ release:
   footer: |
     ### Usage
     
-    - `cli-stash push` - Save the last command from shell history
-    - `cli-stash` or `cli-stash pop` - Interactive search and select saved commands
+    - `cli-stash` - Interactive search and select saved commands
+    - `Ctrl+A` - Add command from shell history
     - `cli-stash list` - List all saved commands
     
     For more information, see the [README](https://github.com/itcaat/cli-stash/blob/main/README.md).
