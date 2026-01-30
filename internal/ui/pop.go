@@ -50,8 +50,8 @@ func NewPopModel(store *storage.Storage) (PopModel, error) {
 	ti := textinput.New()
 	ti.Placeholder = "Type to filter commands..."
 	ti.Focus()
-	ti.CharLimit = 200
-	ti.Width = 60
+	ti.CharLimit = 1000
+	ti.Width = 120
 
 	return PopModel{
 		textInput: ti,

@@ -39,8 +39,8 @@ func NewPushModel(lastCmd string, store *storage.Storage) PushModel {
 	ti := textinput.New()
 	ti.Placeholder = "Enter command to save..."
 	ti.Focus()
-	ti.CharLimit = 500
-	ti.Width = 60
+	ti.CharLimit = 1000
+	ti.Width = 120
 
 	if lastCmd != "" {
 		ti.SetValue(lastCmd)
