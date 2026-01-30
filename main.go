@@ -1,36 +1,80 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
+
 	"github.com/itcaat/cli-stash/internal/shell"
 	"github.com/itcaat/cli-stash/internal/storage"
 	"github.com/itcaat/cli-stash/internal/terminal"
 	"github.com/itcaat/cli-stash/internal/ui"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		// Default: show pop UI (list and select commands)
+var rootCmd = &cobra.Command{
+	Use:   "cli-stash",
+	Short: "Save and recall shell commands",
+	Long:  "A terminal UI application for saving and recalling shell commands with fuzzy search.",
+	Run: func(cmd *cobra.Command, args []string) {
 		runPop()
-		return
-	}
+	},
+}
 
-	switch os.Args[1] {
-	case "push":
+var pushCmd = &cobra.Command{
+	Use:   "push",
+	Short: "Save the last command or enter a new one",
+	Run: func(cmd *cobra.Command, args []string) {
 		runPush()
-	case "pop":
+	},
+}
+
+var popCmd = &cobra.Command{
+	Use:   "pop",
+	Short: "Show saved commands with fuzzy search",
+	Run: func(cmd *cobra.Command, args []string) {
 		runPop()
-	case "list":
+	},
+}
+
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all saved commands",
+	Run: func(cmd *cobra.Command, args []string) {
 		runList()
-	case "help", "--help", "-h":
-		printHelp()
-	default:
-		fmt.Printf("Unknown command: %s\n", os.Args[1])
-		printHelp()
+	},
+}
+
+var addCmd = &cobra.Command{
+	Use:     "add",
+	Aliases: []string{"-"},
+	Short:   "Save command from pipe",
+	Long:    "Read commands from stdin and save them. Usage: echo 'command' | cli-stash add",
+	Run: func(cmd *cobra.Command, args []string) {
+		if isPiped() {
+			saveFromPipe()
+		} else {
+			fmt.Fprintln(os.Stderr, "Usage: echo 'command' | cli-stash add")
+			os.Exit(1)
+		}
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(pushCmd)
+	rootCmd.AddCommand(popCmd)
+	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(addCmd)
+
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
+}
+
+func main() {
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
@@ -42,9 +86,7 @@ func runPush() {
 		os.Exit(1)
 	}
 
-	// Get last command from shell history
 	lastCmd, _ := shell.GetLastCommand()
-
 	model := ui.NewPushModel(lastCmd, store)
 	p := tea.NewProgram(model)
 
@@ -75,14 +117,10 @@ func runPop() {
 		os.Exit(1)
 	}
 
-	// If a command was selected, insert it into terminal
 	if m, ok := finalModel.(ui.PopModel); ok {
 		if selected := m.Selected(); selected != "" {
-			// Try to insert into terminal input buffer
 			if err := terminal.InsertInput(selected); err != nil {
-				// Fallback to clipboard if TIOCSTI fails
 				if clipErr := clipboard.WriteAll(selected); clipErr != nil {
-					// Last resort: just print
 					fmt.Println(selected)
 				} else {
 					fmt.Fprintf(os.Stderr, "Copied to clipboard: %s\n", selected)
@@ -115,27 +153,35 @@ func runList() {
 	}
 }
 
-func printHelp() {
-	help := `cli-stash - Save and recall shell commands
+func isPiped() bool {
+	stat, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return (stat.Mode() & os.ModeCharDevice) == 0
+}
 
-Usage:
-  cli-stash              Show saved commands with fuzzy search
-  cli-stash push         Save the last command (or enter a new one)
-  cli-stash pop          Same as 'cli-stash' - show and select commands
-  cli-stash list         List all saved commands
-  cli-stash help         Show this help message
+func saveFromPipe() {
+	store, err := storage.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error initializing storage: %v\n", err)
+		os.Exit(1)
+	}
 
-Navigation (in interactive mode):
-  ↑/↓               Navigate through commands
-  Enter             Select command
-  Ctrl+A            Add new command
-  Ctrl+D            Delete selected command
-  Esc               Cancel
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" {
+			if err := store.Add(line); err != nil {
+				fmt.Fprintf(os.Stderr, "Error saving command: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("Saved: %s\n", line)
+		}
+	}
 
-Tips:
-  - Use 'cli-stash push' after running a command you want to save
-  - Selected command is inserted into terminal, ready to edit/execute
-  - If terminal insert fails, command is copied to clipboard
-`
-	fmt.Print(help)
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+		os.Exit(1)
+	}
 }
