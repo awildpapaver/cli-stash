@@ -105,6 +105,23 @@ func (s *Storage) Remove(text string) error {
 	return s.Save(filtered)
 }
 
+// Update replaces old command text with new text, preserving metadata
+func (s *Storage) Update(oldText, newText string) error {
+	commands, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	for i, cmd := range commands {
+		if cmd.Text == oldText {
+			commands[i].Text = newText
+			break
+		}
+	}
+
+	return s.Save(commands)
+}
+
 // IncrementUse increases the use count for a command
 func (s *Storage) IncrementUse(text string) error {
 	commands, err := s.Load()

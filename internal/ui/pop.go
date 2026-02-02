@@ -41,7 +41,9 @@ type PopModel struct {
 	cursor        int
 	selected      string
 	quitting      bool
-	historyMode   bool // true = browsing history, false = browsing saved
+	historyMode   bool   // true = browsing history, false = browsing saved
+	editMode      bool   // true = editing a command
+	editOriginal  string // original command being edited
 	storage       *storage.Storage
 }
 
@@ -77,6 +79,38 @@ func (m PopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
+		// Edit mode
+		if m.editMode {
+			switch msg.String() {
+			case "ctrl+c", "esc":
+				// Cancel editing
+				m.editMode = false
+				m.editOriginal = ""
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Type to filter commands..."
+				return m, nil
+
+			case "enter":
+				// Save edited command
+				newText := m.textInput.Value()
+				if newText != "" && newText != m.editOriginal {
+					m.storage.Update(m.editOriginal, newText)
+					m.commands, _ = m.storage.List()
+					m.filtered = m.commands
+				}
+				m.editMode = false
+				m.editOriginal = ""
+				m.textInput.SetValue("")
+				m.textInput.Placeholder = "Type to filter commands..."
+				m.cursor = 0
+				return m, nil
+			}
+
+			// Update text input in edit mode
+			m.textInput, cmd = m.textInput.Update(msg)
+			return m, cmd
+		}
+
 		// History browsing mode
 		if m.historyMode {
 			switch msg.String() {
@@ -160,6 +194,17 @@ func (m PopModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.textInput.SetValue("")
 			m.textInput.Placeholder = "Type to filter history..."
 			m.cursor = 0
+			return m, nil
+
+		case "ctrl+e":
+			// Edit the selected command
+			if len(m.filtered) > 0 && m.cursor < len(m.filtered) {
+				m.editMode = true
+				m.editOriginal = m.filtered[m.cursor]
+				m.textInput.SetValue(m.editOriginal)
+				m.textInput.Placeholder = ""
+				m.textInput.CursorEnd()
+			}
 			return m, nil
 
 		case "ctrl+d", "delete":
@@ -257,6 +302,14 @@ func (m PopModel) View() string {
 		return "" // main.go handles inserting into terminal
 	}
 
+	// Edit mode
+	if m.editMode {
+		s := titleStyle.Render("Edit Command") + "\n\n"
+		s += m.textInput.View() + "\n\n"
+		s += dimStyle.Render("Enter to save • Esc to cancel")
+		return s + "\n"
+	}
+
 	// History mode
 	if m.historyMode {
 		s := titleStyle.Render("Shell History") + " " + dimStyle.Render("- select to save") + "\n\n"
@@ -288,7 +341,7 @@ func (m PopModel) View() string {
 		s += "\n" + dimStyle.Render(fmt.Sprintf("Showing %d of %d commands", len(m.filtered), len(m.commands)))
 	}
 
-	s += "\n\n" + dimStyle.Render("↑/↓ navigate • Enter select • Ctrl+A add • Ctrl+D delete • Esc cancel")
+	s += "\n\n" + dimStyle.Render("↑/↓ navigate • Enter select • Ctrl+A add • Ctrl+E edit • Ctrl+D delete • Esc cancel")
 
 	return s + "\n"
 }

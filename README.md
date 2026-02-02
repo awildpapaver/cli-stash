@@ -73,6 +73,7 @@ Commands are sorted by usage frequency - most used commands appear first.
 | ↑ / ↓ | Navigate |
 | Enter | Select/Save |
 | Ctrl+A | Browse shell history |
+| Ctrl+E | Edit command |
 | Ctrl+D | Delete command |
 | Esc | Cancel / Back |
 
