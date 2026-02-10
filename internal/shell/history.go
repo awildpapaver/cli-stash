@@ -9,13 +9,39 @@ import (
 
 // GetLastCommand attempts to get the last command from shell history
 func GetLastCommand() (string, error) {
-	// Try reading from zsh history first (most common on macOS)
+	// Check HISTFILE first
+	if histFile := os.Getenv("HISTFILE"); histFile != "" {
+		if cmd, err := getLastFromFile(histFile); err == nil && cmd != "" {
+			return cmd, nil
+		}
+	}
+
+	// Detect current shell
+	shell := detectCurrentShell()
+
+	switch shell {
+	case "fish":
+		if cmd, err := getLastFromFishHistory(); err == nil && cmd != "" {
+			return cmd, nil
+		}
+	case "zsh":
+		if cmd, err := getFromZshHistory(); err == nil && cmd != "" {
+			return cmd, nil
+		}
+	case "bash":
+		if cmd, err := getFromBashHistory(); err == nil && cmd != "" {
+			return cmd, nil
+		}
+	}
+
+	// Try all shells as fallback
 	if cmd, err := getFromZshHistory(); err == nil && cmd != "" {
 		return cmd, nil
 	}
-
-	// Fall back to bash history
 	if cmd, err := getFromBashHistory(); err == nil && cmd != "" {
+		return cmd, nil
+	}
+	if cmd, err := getLastFromFishHistory(); err == nil && cmd != "" {
 		return cmd, nil
 	}
 
@@ -23,14 +49,209 @@ func GetLastCommand() (string, error) {
 }
 
 // GetHistory returns recent shell history commands (newest first)
+// Merges history from all available shells
 func GetHistory(limit int) []string {
-	// Try zsh first
-	if cmds := getZshHistoryAll(limit); len(cmds) > 0 {
-		return cmds
+	seen := make(map[string]bool)
+	var allCommands []string
+
+	// Helper to add commands without duplicates
+	addCommands := func(cmds []string) {
+		for _, cmd := range cmds {
+			if !seen[cmd] {
+				seen[cmd] = true
+				allCommands = append(allCommands, cmd)
+			}
+		}
 	}
 
-	// Fall back to bash
+	// Check HISTFILE first
+	if histFile := os.Getenv("HISTFILE"); histFile != "" {
+		addCommands(getHistoryFromFile(histFile, limit))
+	}
+
+	// Try all shells and merge (each already returns newest first)
+	addCommands(getFishHistoryAll(limit))
+	addCommands(getZshHistoryAll(limit))
+	addCommands(getBashHistoryAll(limit))
+
+	// Limit total results
+	if len(allCommands) > limit {
+		allCommands = allCommands[:limit]
+	}
+
+	return allCommands
+}
+
+// GetFishHistory returns history from fish shell only
+func GetFishHistory(limit int) []string {
+	return getFishHistoryAll(limit)
+}
+
+// GetZshHistory returns history from zsh only
+func GetZshHistory(limit int) []string {
+	return getZshHistoryAll(limit)
+}
+
+// GetBashHistory returns history from bash only
+func GetBashHistory(limit int) []string {
 	return getBashHistoryAll(limit)
+}
+
+// detectCurrentShell tries to detect the actual running shell
+func detectCurrentShell() string {
+	// Fish sets FISH_VERSION
+	if os.Getenv("FISH_VERSION") != "" {
+		return "fish"
+	}
+
+	// Zsh sets ZSH_VERSION
+	if os.Getenv("ZSH_VERSION") != "" {
+		return "zsh"
+	}
+
+	// Bash sets BASH_VERSION
+	if os.Getenv("BASH_VERSION") != "" {
+		return "bash"
+	}
+
+	// Fall back to $SHELL
+	return filepath.Base(os.Getenv("SHELL"))
+}
+
+// getHistoryFromFile reads history from a custom HISTFILE (bash/zsh format)
+func getHistoryFromFile(path string, limit int) []string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(string(data), "\n")
+	seen := make(map[string]bool)
+	var commands []string
+
+	for i := len(lines) - 1; i >= 0 && len(commands) < limit; i-- {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			continue
+		}
+
+		// Handle zsh extended history format
+		cmd := line
+		if strings.HasPrefix(line, ":") {
+			parts := strings.SplitN(line, ";", 2)
+			if len(parts) == 2 {
+				cmd = parts[1]
+			}
+		}
+
+		if shouldSkipCommand(cmd) || seen[cmd] {
+			continue
+		}
+
+		seen[cmd] = true
+		commands = append(commands, cmd)
+	}
+
+	return commands
+}
+
+// getLastFromFile reads the last command from a custom HISTFILE
+func getLastFromFile(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+
+	lines := strings.Split(string(data), "\n")
+
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			continue
+		}
+
+		cmd := line
+		if strings.HasPrefix(line, ":") {
+			parts := strings.SplitN(line, ";", 2)
+			if len(parts) == 2 {
+				cmd = parts[1]
+			}
+		}
+
+		if !shouldSkipCommand(cmd) {
+			return cmd, nil
+		}
+	}
+
+	return "", nil
+}
+
+// getFishHistoryAll reads history from fish shell
+// Fish history is at ~/.local/share/fish/fish_history
+// Format: "- cmd: command\n  when: timestamp\n"
+func getFishHistoryAll(limit int) []string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil
+	}
+
+	// Fish can also use XDG_DATA_HOME
+	dataHome := os.Getenv("XDG_DATA_HOME")
+	if dataHome == "" {
+		dataHome = filepath.Join(homeDir, ".local", "share")
+	}
+
+	historyPath := filepath.Join(dataHome, "fish", "fish_history")
+	data, err := os.ReadFile(historyPath)
+	if err != nil {
+		return nil
+	}
+
+	lines := strings.Split(string(data), "\n")
+	seen := make(map[string]bool)
+	var commands []string
+
+	// Parse fish history format (read from end)
+	for i := len(lines) - 1; i >= 0 && len(commands) < limit; i-- {
+		line := lines[i]
+
+		// Look for "- cmd: " prefix
+		if strings.HasPrefix(line, "- cmd: ") {
+			cmd := strings.TrimPrefix(line, "- cmd: ")
+			cmd = unescapeFishCommand(cmd)
+
+			if shouldSkipCommand(cmd) || seen[cmd] {
+				continue
+			}
+
+			seen[cmd] = true
+			commands = append(commands, cmd)
+		}
+	}
+
+	return commands
+}
+
+// getLastFromFishHistory gets the last command from fish history
+func getLastFromFishHistory() (string, error) {
+	cmds := getFishHistoryAll(1)
+	if len(cmds) > 0 {
+		return cmds[0], nil
+	}
+	return "", nil
+}
+
+// unescapeFishCommand handles fish's escape sequences
+func unescapeFishCommand(cmd string) string {
+	// Fish escapes newlines as \n and backslashes as \\
+	cmd = strings.ReplaceAll(cmd, "\\n", "\n")
+	cmd = strings.ReplaceAll(cmd, "\\\\", "\\")
+	return cmd
+}
+
+// shouldSkipCommand returns true if command should be filtered out
+func shouldSkipCommand(cmd string) bool {
+	return strings.HasPrefix(cmd, "stash") || strings.HasPrefix(cmd, "cli-stash")
 }
 
 // getZshHistoryAll reads recent commands from ~/.zsh_history
@@ -50,14 +271,12 @@ func getZshHistoryAll(limit int) []string {
 	seen := make(map[string]bool)
 	var commands []string
 
-	// Read from end (newest first)
 	for i := len(lines) - 1; i >= 0 && len(commands) < limit; i-- {
 		line := strings.TrimSpace(lines[i])
 		if line == "" {
 			continue
 		}
 
-		// Zsh history format: ": timestamp:0;command" or just "command"
 		cmd := line
 		if strings.HasPrefix(line, ":") {
 			parts := strings.SplitN(line, ";", 2)
@@ -66,11 +285,7 @@ func getZshHistoryAll(limit int) []string {
 			}
 		}
 
-		// Skip stash commands and duplicates
-		if strings.HasPrefix(cmd, "stash") || strings.HasPrefix(cmd, "cli-stash") {
-			continue
-		}
-		if seen[cmd] {
+		if shouldSkipCommand(cmd) || seen[cmd] {
 			continue
 		}
 
@@ -104,10 +319,7 @@ func getBashHistoryAll(limit int) []string {
 			continue
 		}
 
-		if strings.HasPrefix(line, "stash") || strings.HasPrefix(line, "cli-stash") {
-			continue
-		}
-		if seen[line] {
+		if shouldSkipCommand(line) || seen[line] {
 			continue
 		}
 
@@ -132,15 +344,13 @@ func getFromZshHistory() (string, error) {
 	}
 
 	lines := strings.Split(string(data), "\n")
-	
-	// Find the last non-empty line that's not a stash command
+
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := strings.TrimSpace(lines[i])
 		if line == "" {
 			continue
 		}
 
-		// Zsh history format can be: ": timestamp:0;command" or just "command"
 		cmd := line
 		if strings.HasPrefix(line, ":") {
 			parts := strings.SplitN(line, ";", 2)
@@ -149,12 +359,9 @@ func getFromZshHistory() (string, error) {
 			}
 		}
 
-		// Skip stash commands themselves
-		if strings.HasPrefix(cmd, "stash") || strings.HasPrefix(cmd, "cli-stash") {
-			continue
+		if !shouldSkipCommand(cmd) {
+			return cmd, nil
 		}
-
-		return cmd, nil
 	}
 
 	return "", nil
@@ -174,20 +381,16 @@ func getFromBashHistory() (string, error) {
 	}
 
 	lines := strings.Split(string(data), "\n")
-	
-	// Find the last non-empty line that's not a stash command
+
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := strings.TrimSpace(lines[i])
 		if line == "" {
 			continue
 		}
 
-		// Skip stash commands themselves
-		if strings.HasPrefix(line, "stash") || strings.HasPrefix(line, "cli-stash") {
-			continue
+		if !shouldSkipCommand(line) {
+			return line, nil
 		}
-
-		return line, nil
 	}
 
 	return "", nil
